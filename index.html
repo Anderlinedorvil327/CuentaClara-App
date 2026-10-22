@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Controla tus gastos, revisa tu presupuesto y compara precios de productos.">
+<meta name="theme-color" content="#1f8a5b">
+<title>CuentaClara | Control de gastos y ahorro</title>
+<style>
+:root{--bg:#f4f7f5;--card:#fff;--tx:#17211b;--mu:#66756c;--br:#dce5df;--pr:#1f8a5b;--pr2:#e3f4eb;--wa:#d9822b;--rd:#c94a3f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1512;--card:#18211c;--tx:#e8f0ea;--mu:#93a599;--br:#2a382f;--pr:#3bbf85;--pr2:#17342a}}
+:root[data-theme="dark"]{--bg:#0f1512;--card:#18211c;--tx:#e8f0ea;--mu:#93a599;--br:#2a382f;--pr:#3bbf85;--pr2:#17342a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:14px 14px 90px}
+h1{font-size:22px;margin:6px 0 2px}h1 span{color:var(--pr)}h2{font-size:16px;margin:0 0 10px}
+.sub{color:var(--mu);font-size:13px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--br);border-radius:14px;padding:14px;margin-bottom:12px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--br);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{flex:1;border:0;background:none;color:var(--mu);padding:12px 4px;font:inherit;font-size:13px;cursor:pointer}
+nav button.on{color:var(--pr);font-weight:700}
+.seg{display:flex;gap:4px;background:var(--pr2);border-radius:10px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;color:var(--tx);padding:7px;border-radius:8px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--pr);color:#fff}
+.big{font-size:30px;font-weight:700}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.bar{height:12px;background:var(--pr2);border-radius:8px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:var(--pr)}
+input,select{width:100%;padding:10px;border:1px solid var(--br);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit;margin-bottom:8px}
+.g2{display:grid;grid-template-columns:2fr 1fr;gap:8px}.g3{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{background:var(--pr);color:#fff;border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:600;cursor:pointer;width:100%}
+.btn.s{background:var(--pr2);color:var(--pr)}.btn:disabled{opacity:.5}
+.it{padding:9px 0;border-bottom:1px solid var(--br)}.it:last-child{border:0}.mu{color:var(--mu);font-size:13px}
+.ok{color:var(--pr);font-weight:700}.tag{display:inline-block;font-size:12px;background:var(--pr2);color:var(--pr);border-radius:8px;padding:2px 8px;margin:2px 4px 0 0}
+.x{background:none;border:0;color:var(--rd);cursor:pointer;font-size:18px}
+.note{font-size:12px;color:var(--mu);border-left:3px solid var(--wa);padding-left:8px;margin:8px 0}
+svg text{fill:var(--mu);font-size:10px}
+</style></head><body><main>
+<h1>Cuenta<span>Clara</span></h1><div class="sub">Controla tus gastos y ahorra en cada compra · CLP</div>
+<div id="v"></div></main>
+<nav id="nav"></nav>
+<script>
+/* ===== Precios: PROVEEDOR CONECTABLE =====
+   Hoy usa datos de prueba. Para conectar precios reales, reemplaza PriceProvider.getPrices
+   por una llamada a tu API/backend (debe devolver [{tienda, precio}] para un producto). */
+const TEST=[
+{k:['leche'],n:'Leche entera 1 L',c:'Lácteos',p:{'Súper A':1500,'Súper B':1300,'Súper C':1200}},
+{k:['pan'],n:'Pan hallulla 1 kg',c:'Panadería',p:{'Súper A':1990,'Súper B':1850,'Súper C':2100}},
+{k:['huevo'],n:'Huevos 12 un.',c:'Despensa',p:{'Súper A':3990,'Súper B':3600,'Súper C':3790}},
+{k:['arroz'],n:'Arroz 1 kg',c:'Despensa',p:{'Súper A':1590,'Súper B':1490,'Súper C':1390}},
+{k:['aceite'],n:'Aceite 900 ml',c:'Despensa',p:{'Súper A':2790,'Súper B':2590,'Súper C':2690}},
+{k:['fideo','spaghetti'],n:'Fideos 400 g',c:'Despensa',p:{'Súper A':1090,'Súper B':990,'Súper C':890}},
+{k:['azucar','azúcar'],n:'Azúcar 1 kg',c:'Despensa',p:{'Súper A':1390,'Súper B':1290,'Súper C':1350}},
+{k:['pollo'],n:'Pollo entero kg',c:'Carnes',p:{'Súper A':3490,'Súper B':3290,'Súper C':3190}},
+{k:['tomate'],n:'Tomate kg',c:'Frutas y verduras',p:{'Súper A':1890,'Súper B':1690,'Súper C':1990}},
+{k:['palta'],n:'Palta kg',c:'Frutas y verduras',p:{'Súper A':5990,'Súper B':5490,'Súper C':5290}},
+{k:['papel higi'],n:'Papel higiénico 12 un.',c:'Hogar',p:{'Súper A':5990,'Súper B':5490,'Súper C':5790}},
+{k:['detergente'],n:'Detergente 3 L',c:'Hogar',p:{'Súper A':7990,'Súper B':7490,'Súper C':6990}},
+{k:['cafe','café'],n:'Café instantáneo 170 g',c:'Despensa',p:{'Súper A':5490,'Súper B':4990,'Súper C':5290}},
+{k:['yogur','yogurt'],n:'Yogur 1 kg',c:'Lácteos',p:{'Súper A':1790,'Súper B':1690,'Súper C':1590}}];
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const PriceProvider={async getPrices(name){const q=norm(name);const m=TEST.find(t=>t.k.some(k=>q.includes(norm(k))));
+ return m?{producto:m.n,categoria:m.c,precios:Object.entries(m.p).map(([tienda,precio])=>({tienda,precio}))}:null}};
+const catOf=n=>{const q=norm(n);const m=TEST.find(t=>t.k.some(k=>q.includes(norm(k))));return m?m.c:'Otros'};
+
+const $=id=>document.getElementById(id);const fmt=n=>'$'+Math.round(n).toLocaleString('es-CL');
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>ymd(new Date());
+let S={gastos:[],presupuesto:300000};
+try{const r=localStorage.getItem('cc1');if(r)S=JSON.parse(r)}catch(e){}
+const save=()=>{try{localStorage.setItem('cc1',JSON.stringify(S))}catch(e){}};
+let tab='res',per='mes',pending=null,busy=false,prices={};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function range(p){const n=new Date();let a=new Date(n.getFullYear(),n.getMonth(),n.getDate()),b=new Date(a);
+ if(p=='dia'){b.setDate(a.getDate()+1)}
+ else if(p=='sem'){const d=(a.getDay()+6)%7;a.setDate(a.getDate()-d);b=new Date(a);b.setDate(a.getDate()+7)}
+ else if(p=='mes'){a.setDate(1);b=new Date(a.getFullYear(),a.getMonth()+1,1)}
+ else{a=new Date(a.getFullYear(),0,1);b=new Date(a.getFullYear()+1,0,1)}
+ return[a,b]}
+const inR=(g,a,b)=>{const d=new Date(g.fecha+'T00:00:00');return d>=a&&d<b};
+const tot=l=>l.reduce((s,g)=>s+g.precio*g.cant,0);
+const budgetFor=p=>({dia:S.presupuesto/30,sem:S.presupuesto*7/30,mes:S.presupuesto,ano:S.presupuesto*12})[p];
+
+function series(p){const n=new Date(),out=[];
+ for(let i=5;i>=0;i--){let a,b,l;
+  if(p=='dia'){a=new Date(n.getFullYear(),n.getMonth(),n.getDate()-i);b=new Date(a);b.setDate(a.getDate()+1);l=['D','L','M','M','J','V','S'][a.getDay()]+a.getDate()}
+  else if(p=='sem'){a=new Date(n.getFullYear(),n.getMonth(),n.getDate()-((n.getDay()+6)%7)-7*i);b=new Date(a);b.setDate(a.getDate()+7);l=a.getDate()+'/'+(a.getMonth()+1)}
+  else if(p=='mes'){a=new Date(n.getFullYear(),n.getMonth()-i,1);b=new Date(a.getFullYear(),a.getMonth()+1,1);l=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][a.getMonth()]}
+  else{a=new Date(n.getFullYear()-i,0,1);b=new Date(a.getFullYear()+1,0,1);l=String(a.getFullYear())}
+  out.push([l,tot(S.gastos.filter(g=>inR(g,a,b)))])}
+ return out}
+function bars(d,w=600,h=150){const m=Math.max(...d.map(x=>x[1]),1),bw=w/d.length;
+ return`<svg viewBox="0 0 ${w} ${h+22}" width="100%" role="img" aria-label="Gastos por periodo">`+d.map((x,i)=>{const bh=x[1]/m*(h-16);return`<rect x="${i*bw+bw*.18}" y="${h-bh}" width="${bw*.64}" height="${bh}" rx="5" fill="var(--pr)"/><text x="${i*bw+bw/2}" y="${h-bh-4}" text-anchor="middle">${x[1]?fmt(x[1]):''}</text><text x="${i*bw+bw/2}" y="${h+14}" text-anchor="middle">${x[0]}</text>`}).join('')+'</svg>'}
+function cats(l){const m={};l.forEach(g=>m[g.cat]=(m[g.cat]||0)+g.precio*g.cant);const t=Object.values(m).reduce((a,b)=>a+b,0)||1;
+ return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="it"><div class="row"><span>${esc(c)}</span><b>${fmt(v)}</b></div><div class="bar" style="height:7px;margin:4px 0 0"><i style="width:${v/t*100}%"></i></div></div>`).join('')}
+
+function vRes(){const[a,b]=range(per),l=S.gastos.filter(g=>inR(g,a,b)),t=tot(l),bu=budgetFor(per),rest=bu-t,pc=Math.min(100,t/bu*100);
+ const nm={dia:'hoy',sem:'esta semana',mes:'este mes',ano:'este año'}[per];
+ return`<div class="seg">${[['dia','Día'],['sem','Semana'],['mes','Mes'],['ano','Año']].map(([k,n])=>`<button class="${per==k?'on':''}" onclick="per='${k}';go()">${n}</button>`).join('')}</div>
+ <div class="card"><div class="mu">Gastado ${nm}</div><div class="big">${fmt(t)}</div>
+ <div class="bar"><i style="width:${pc}%;background:${pc>90?'var(--rd)':pc>70?'var(--wa)':'var(--pr)'}"></i></div>
+ <div class="row"><span class="mu">Presupuesto ${fmt(bu)}</span><b class="${rest<0?'':'ok'}" style="${rest<0?'color:var(--rd)':''}">${rest<0?'Te pasaste por '+fmt(-rest):'Quedan '+fmt(rest)}</b></div></div>
+ <div class="card"><h2>Gastos por ${{dia:'día',sem:'semana',mes:'mes',ano:'año'}[per]}</h2>${bars(series(per))}</div>
+ <div class="card"><h2>Por categoría</h2>${l.length?cats(l):'<div class="mu">Aún no hay gastos en este período.</div>'}</div>
+ <div class="card"><h2>Presupuesto mensual</h2><input type="number" inputmode="numeric" value="${S.presupuesto}" onchange="S.presupuesto=Math.max(1,+this.value||1);save();go()"><div class="mu">El presupuesto diario, semanal y anual se calcula a partir de este monto.</div></div>`}
+
+function vAdd(){return`<div class="card"><h2>Agregar gasto</h2>
+ <div class="g2"><input id="np" placeholder="Producto (ej: leche)"><input id="pp" type="number" inputmode="numeric" placeholder="Precio $"></div>
+ <div class="g3"><input id="nc" type="number" min="1" value="1" aria-label="Cantidad"><input id="nf" type="date" value="${today()}"></div>
+ <button class="btn" onclick="addManual()">Guardar gasto</button></div>
+ <div class="card"><h2>📷 Foto de la boleta</h2><div class="mu" style="margin-bottom:8px">Sube una foto y reconoceremos productos y precios. Podrás revisarlos antes de guardar.</div>
+ <input id="ph" type="file" accept="image/*" capture="environment" onchange="readReceipt(this.files[0])"><div id="ps"></div>
+ ${pending?`<div>${pending.map((x,i)=>`<div class="g2" style="grid-template-columns:2fr 1fr auto;align-items:center"><input value="${esc(x.producto)}" onchange="pending[${i}].producto=this.value"><input type="number" value="${x.precio}" onchange="pending[${i}].precio=+this.value"><button class="x" onclick="pending.splice(${i},1);go()">✕</button></div>`).join('')}<button class="btn" onclick="confirmReceipt()">Guardar ${pending.length} productos</button></div>`:''}</div>
+ <div class="card"><h2>Historial</h2>${[...S.gastos].sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.id-a.id).slice(0,40).map(g=>`<div class="it row"><div><b>${esc(g.prod)}</b>${g.cant>1?' × '+g.cant:''}<div class="mu">${g.fecha} · ${esc(g.cat)}</div></div><div><b>${fmt(g.precio*g.cant)}</b> <button class="x" onclick="del(${g.id})" aria-label="Eliminar">✕</button></div></div>`).join('')||'<div class="mu">Sin gastos todavía.</div>'}
+ <div style="margin-top:10px"><button class="btn s" onclick="demo()">Cargar datos de ejemplo</button></div></div>`}
+
+function vSav(){const m={};S.gastos.forEach(g=>{const k=norm(g.prod);(m[k]=m[k]||{prod:g.prod,cant:0,suma:0,n:0});m[k].cant+=g.cant;m[k].suma+=g.precio*g.cant;m[k].n++});
+ const rows=[];let total=0;const st={};
+ Object.entries(m).forEach(([k,x])=>{const P=prices[k];if(!P)return;const unit=x.suma/x.cant,best=P.precios.reduce((a,b)=>b.precio<a.precio?b:a),sav=Math.max(0,(unit-best.precio)*x.cant);total+=sav;
+  P.precios.forEach(s=>st[s.tienda]=(st[s.tienda]||0)+s.precio*x.cant);rows.push({x,P,unit,best,sav})});
+ const paid=rows.reduce((s,r)=>s+r.x.suma,0);const bs=Object.entries(st).sort((a,b)=>a[1]-b[1])[0];
+ return`<div class="card" style="background:var(--pr2)"><div class="mu">Podrías ahorrar</div><div class="big ok">${fmt(total)}</div>
+ <div class="mu">${bs?`Comprando todo en <b>${esc(bs[0])}</b> pagarías ${fmt(bs[1])} en vez de ${fmt(paid)}.`:'Registra productos para ver comparaciones.'}</div></div>
+ ${rows.sort((a,b)=>b.sav-a.sav).map(r=>`<div class="card"><div class="row"><b>${esc(r.P.producto)}</b><span class="mu">pagaste ${fmt(r.unit)}</span></div>
+ <div>${r.P.precios.map(s=>`<span class="tag" style="${s.tienda==r.best.tienda?'background:var(--pr);color:#fff':''}">${esc(s.tienda)}: ${fmt(s.precio)}</span>`).join('')}</div>
+ <div style="margin-top:8px">${r.sav>0?`Podrías ahorrar <b class="ok">${fmt(r.sav)}</b> comprándolo en <b>${esc(r.best.tienda)}</b>`:'<span class="ok">✓ Ya compraste al mejor precio</span>'}</div></div>`).join('')||'<div class="card mu">Aún no hay productos reconocidos. Agrega gastos como leche, pan, arroz, huevos…</div>'}
+ <div class="note">Precios de prueba (datos ficticios). La app está preparada para conectar precios reales de supermercados: solo hay que reemplazar <code>PriceProvider.getPrices()</code>.</div>`}
+
+async function loadPrices(){for(const g of S.gastos){const k=norm(g.prod);if(!(k in prices))prices[k]=await PriceProvider.getPrices(g.prod)}}
+function add(prod,precio,cant,fecha){S.gastos.push({id:Date.now()+Math.floor(Math.random()*1e4),prod:prod.trim(),precio:Math.round(precio),cant:cant||1,fecha:fecha||today(),cat:catOf(prod)})}
+function addManual(){const p=$('np').value,pr=+$('pp').value;if(!p.trim()||!(pr>0)){alert('Escribe el producto y un precio válido.');return}add(p,pr,Math.max(1,+$('nc').value||1),$('nf').value);save();go()}
+function del(id){S.gastos=S.gastos.filter(g=>g.id!=id);save();go()}
+function demo(){const d=n=>{const x=new Date();x.setDate(x.getDate()-n);return ymd(x)};
+ [['Leche',1500,4,1],['Pan',1990,2,2],['Huevos',3990,1,3],['Arroz',1590,1,5],['Pollo',3490,2,6],['Fideos',1090,3,8],['Palta',5990,1,10],['Detergente',7990,1,14],['Yogur',1790,2,20],['Leche',1500,4,25],['Aceite',2790,1,40],['Café',5490,1,70]].forEach(([p,pr,c,f])=>add(p,pr,c,d(f)));save();go()}
+async function readReceipt(f){if(!f)return;const ps=$('ps');ps.innerHTML='<div class="mu">Leyendo boleta…</div>';
+ if(typeof claude==='undefined'){ps.innerHTML='<div class="note">El reconocimiento por foto no está disponible en esta publicación. Puedes ingresar los gastos manualmente.</div>';return}
+ try{const sample=await claude.use('sample');if(!sample)throw{code:'na'};
+  const r=await sample.json('Esta es una boleta chilena. Extrae cada producto comprado con su precio unitario en pesos chilenos (número entero, sin puntos ni $). Responde SOLO un arreglo JSON: [{"producto":"nombre corto","precio":1500}]. Si no es una boleta legible, responde [].',{images:f,modelTier:'quick'});
+  pending=(Array.isArray(r)?r:[]).filter(x=>x.producto&&x.precio>0);if(!pending.length){pending=null;ps.innerHTML='<div class="note">No pude leer productos. Prueba con otra foto o ingrésalos manualmente.</div>';return}go()}
+ catch(e){ps.innerHTML='<div class="note">'+(e&&e.code=='na'?'El reconocimiento por foto no está disponible en esta vista. Puedes ingresar los gastos manualmente.':'No se pudo leer la boleta ('+esc((e&&e.code)||'error')+').')+'</div>'}}
+function confirmReceipt(){pending.forEach(x=>add(x.producto,x.precio,1));pending=null;save();go()}
+
+async function go(){await loadPrices();
+ $('v').innerHTML=tab=='res'?vRes():tab=='add'?vAdd():vSav();
+ $('nav').innerHTML=[['res','📊','Resumen'],['add','➕','Agregar'],['sav','💰','Ahorro']].map(([k,i,n])=>`<button class="${tab==k?'on':''}" onclick="tab='${k}';go()">${i}<br>${n}</button>`).join('')}
+go();
+</script></body></html>
